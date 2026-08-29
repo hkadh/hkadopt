@@ -1,0 +1,64 @@
+name: Daily refresh & deploy
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # 00:00 UTC = 08:00 Hong Kong time, daily
+  workflow_dispatch: # allows manual runs from the Actions tab
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  refresh-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Refresh adoption data from org websites
+        run: pnpm refresh
+
+      - name: Commit refreshed data (if changed)
+        run: |
+          git config user.name "adopt-hub-bot"
+          git config user.email "bot@users.noreply.github.com"
+          if [[ -n $(git status --porcelain src/data/listings.ts) ]]; then
+            git add src/data/listings.ts
+            git commit -m "chore: refresh adoption data ($(date -u +%F))"
+            git push
+          else
+            echo "No changes in listings since yesterday."
+          fi
+
+      - name: Build
+        run: pnpm build
+        env:
+          VITE_CLOUDINARY_CLOUD: ${{ secrets.VITE_CLOUDINARY_CLOUD }}
+          VITE_CLOUDINARY_PRESET: ${{ secrets.VITE_CLOUDINARY_PRESET }}
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload dist
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
