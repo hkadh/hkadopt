@@ -2812,7 +2812,7 @@ export const SPCA_ANIMALS: Listing[] = [
     img: 'https://www.spca.org.hk/wp-content/uploads/2025/08/Bei-Bei-PN-583057-Ruff-Tales-Photography-3.jpg',
     gender: 'male',
     breed: '唐狗',
-    ageMonths: 23,
+    ageMonths: 24,
     note: { zh: '香港總部 · 已絕育', en: 'Wan Chai HQ · Desexed' },
     emoji: '🐕', hue: 166,
   },
